@@ -64,7 +64,11 @@ def init_mongodb():
 def convert_multiplier_to_decimal(multiplier_str):
     """Convert multiplier string (e.g., '2.50x') to Decimal"""
     try:
+        # Strip trailing 'x'/'X' and normalize thousand/decimal separators.
+        # Some casinos format big multipliers as '1,640.11x' – Decimal cannot
+        # parse the comma, so we remove any thousand separators.
         multiplier_value = re.sub(r'[xX]', '', multiplier_str.strip())
+        multiplier_value = multiplier_value.replace(',', '')
         return Decimal(multiplier_value)
     except Exception as e:
         logger.error(f"Error converting multiplier '{multiplier_str}': {e}")
