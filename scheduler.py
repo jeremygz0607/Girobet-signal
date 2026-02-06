@@ -119,11 +119,14 @@ def _get_daily_stats(date_str):
 
 
 def _get_today_wins_losses(stats):
-    """Get total wins/losses for the day from stats doc. Uses today_wins/today_losses, fallback to wins/losses."""
+    """Get total wins/losses for the day. today_wins = signals_sent - today_losses; uses today_losses from doc."""
     if not stats:
         return 0, 0
-    wins = stats.get("today_wins", stats.get("wins", 0))
     losses = stats.get("today_losses", stats.get("losses", 0))
+    wins = stats.get("today_wins")
+    if wins is None:
+        # Backfill: today_wins = signals_sent - today_losses (for docs created before this field)
+        wins = max(0, stats.get("signals_sent", 0) - losses)
     return wins, losses
 
 

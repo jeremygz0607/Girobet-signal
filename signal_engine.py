@@ -220,6 +220,8 @@ def _ensure_daily_stats():
                     "wins": 0,
                     "losses": 0,
                     "signals_sent": 0,
+                    "today_wins": 0,
+                    "today_losses": 0,
                     "updated_at": datetime.now(timezone.utc),
                 }
             },
@@ -253,9 +255,23 @@ def create_signal(trigger_round_id, target):
     }
     try:
         _signals_coll.insert_one(doc)
+        # today_wins = signals_sent - today_losses (stored for recaps)
         _daily_stats_coll.update_one(
             {"_id": today},
-            {"$inc": {"signals_sent": 1}, "$set": {"updated_at": now}},
+            [
+                {
+                    "$set": {
+                        "signals_sent": {"$add": [{"$ifNull": ["$signals_sent", 0]}, 1]},
+                        "today_wins": {
+                            "$subtract": [
+                                {"$add": [{"$ifNull": ["$signals_sent", 0]}, 1]},
+                                {"$ifNull": ["$today_losses", 0]},
+                            ]
+                        },
+                        "updated_at": now,
+                    }
+                }
+            ],
         )
         logger.info(f"Signal created: id={sig_id}, trigger_round_id={trigger_round_id}, target={target}")
         
@@ -358,9 +374,24 @@ def increment_daily_losses():
     _ensure_daily_stats()
     today = _today_str()
     now = datetime.now(timezone.utc)
+    # today_wins = signals_sent - today_losses (stored for recaps)
     _daily_stats_coll.update_one(
         {"_id": today},
-        {"$inc": {"losses": 1, "today_losses": 1}, "$set": {"updated_at": now}},
+        [
+            {
+                "$set": {
+                    "losses": {"$add": [{"$ifNull": ["$losses", 0]}, 1]},
+                    "today_losses": {"$add": [{"$ifNull": ["$today_losses", 0]}, 1]},
+                    "today_wins": {
+                        "$subtract": [
+                            {"$ifNull": ["$signals_sent", 0]},
+                            {"$add": [{"$ifNull": ["$today_losses", 0]}, 1]},
+                        ]
+                    },
+                    "updated_at": now,
+                }
+            }
+        ],
     )
 
 
