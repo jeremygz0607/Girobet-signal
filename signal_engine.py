@@ -260,23 +260,22 @@ def create_signal(trigger_round_id, target):
     }
     try:
         _signals_coll.insert_one(doc)
-        # today_wins = signals_sent - today_losses (stored for recaps)
+        # today_wins = signals_sent - today_losses (create/backfill today_wins explicitly)
+        stats_doc = _daily_stats_coll.find_one({"_id": today}) or {}
+        current_signals = stats_doc.get("signals_sent", 0)
+        current_today_losses = stats_doc.get("today_losses", 0)
+        new_signals_sent = current_signals + 1
+        today_wins_value = max(0, new_signals_sent - current_today_losses)
         _daily_stats_coll.update_one(
             {"_id": today},
-            [
-                {
-                    "$set": {
-                        "signals_sent": {"$add": [{"$ifNull": ["$signals_sent", 0]}, 1]},
-                        "today_wins": {
-                            "$subtract": [
-                                {"$add": [{"$ifNull": ["$signals_sent", 0]}, 1]},
-                                {"$ifNull": ["$today_losses", 0]},
-                            ]
-                        },
-                        "updated_at": now,
-                    }
-                }
-            ],
+            {
+                "$inc": {"signals_sent": 1},
+                "$set": {
+                    "today_wins": today_wins_value,
+                    "updated_at": now,
+                },
+            },
+            upsert=True,
         )
         logger.info(f"Signal created: id={sig_id}, trigger_round_id={trigger_round_id}, target={target}")
         
@@ -379,24 +378,22 @@ def increment_daily_losses():
     _ensure_daily_stats()
     today = _today_str()
     now = datetime.now(timezone.utc)
-    # today_wins = signals_sent - today_losses (stored for recaps)
+    # today_wins = signals_sent - today_losses (create/backfill today_wins explicitly)
+    stats_doc = _daily_stats_coll.find_one({"_id": today}) or {}
+    current_signals = stats_doc.get("signals_sent", 0)
+    current_today_losses = stats_doc.get("today_losses", 0)
+    new_today_losses = current_today_losses + 1
+    today_wins_value = current_signals - new_today_losses
     _daily_stats_coll.update_one(
         {"_id": today},
-        [
-            {
-                "$set": {
-                    "losses": {"$add": [{"$ifNull": ["$losses", 0]}, 1]},
-                    "today_losses": {"$add": [{"$ifNull": ["$today_losses", 0]}, 1]},
-                    "today_wins": {
-                        "$subtract": [
-                            {"$ifNull": ["$signals_sent", 0]},
-                            {"$add": [{"$ifNull": ["$today_losses", 0]}, 1]},
-                        ]
-                    },
-                    "updated_at": now,
-                }
-            }
-        ],
+        {
+            "$inc": {"losses": 1, "today_losses": 1},
+            "$set": {
+                "today_wins": max(0, today_wins_value),
+                "updated_at": now,
+            },
+        },
+        upsert=True,
     )
 
 
