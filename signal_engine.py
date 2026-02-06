@@ -239,6 +239,11 @@ def create_signal(trigger_round_id, target):
     if _signals_coll is None:
         return None
     _ensure_daily_stats()
+    # Template 2: Pattern monitoring sent just before Template 3 (signal)
+    pattern_data = get_pattern_monitoring_data()
+    if pattern_data:
+        count, remaining = pattern_data
+        telegram_service.send_pattern_monitoring(count, remaining)
     now = datetime.now(timezone.utc)
     today = _today_str()
     sig_id = _next_signal_id()
@@ -488,8 +493,7 @@ def send_win_message(signal, round_data):
         _current_streak = _get_consecutive_wins_from_db()  # Already includes this win (mark_won was called)
     else:
         _current_streak += 1
-    _check_streak_celebration()
-    
+
     stats = _get_today_stats()
     telegram_service.send_win_result(
         result=round_data.get("multiplier"),
@@ -497,6 +501,8 @@ def send_win_message(signal, round_data):
         today_wins=stats["wins"],
         today_losses=stats["losses"],
     )
+    # Streak celebration (5, 10, 15, ...) sent after win message
+    _check_streak_celebration()
 
 
 def send_recovery_message(signal, round_data):
@@ -511,8 +517,7 @@ def send_recovery_message(signal, round_data):
         _current_streak = _get_consecutive_wins_from_db()  # Already includes this win (mark_won was called)
     else:
         _current_streak += 1
-    _check_streak_celebration()
-    
+
     stats = _get_today_stats()
     telegram_service.send_gale_recovery(
         gale_depth=signal.get("gale_depth"),
@@ -521,6 +526,8 @@ def send_recovery_message(signal, round_data):
         today_wins=stats["wins"],
         today_losses=stats["losses"],
     )
+    # Streak celebration (5, 10, 15, ...) sent after recovery message
+    _check_streak_celebration()
 
 
 def send_gale_message(signal, new_depth):
