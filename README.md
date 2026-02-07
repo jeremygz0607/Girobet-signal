@@ -54,12 +54,12 @@ pip install -r requirements.txt
 
 Shared paths, log-message patterns, and signal engine parameters are in **config.py**:
 
-- **Signal Engine:** `SEQUENCE_LENGTH=6`, `THRESHOLD=2.0`, `TARGET_CASHOUT=1.80`, `MAX_GALE=2`, `COOLDOWN_ROUNDS=3`
+- **Signal Engine:** `SEQUENCE_LENGTH=3`, `THRESHOLD=2.0`, `TARGET_CASHOUT=1.80`, `MAX_GALE=2`, `COOLDOWN_ROUNDS=3`
 - **MongoDB collections:** `rounds`, `signals`, `daily_stats`, `engine_state`
 
 ## Signal Engine
 
-**Trigger:** When the last 6 rounds all have multiplier < 2.0x (and no active signal, not in cooldown).
+**Trigger:** When the last 3 rounds all have multiplier < 2.0x (and no active signal, not in cooldown).
 
 **Flow:**
 - **Signal Active** → Next round ≥ target → **WIN** (send win message, increment daily wins).
