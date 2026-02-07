@@ -42,12 +42,6 @@ Run all scripts from the project root so `log.log` and `aviator.pid` are in the 
    ```
    This also initializes Telegram and the scheduler for automated messages.
 
-3. **Watchdog (optional – auto-restart scraper on repeated "No payouts")**  
-   ```bash
-   python run_aviator_watchdog.py
-   ```
-   Start `aviator.py` first, then run the watchdog.
-
 ## Dependencies
 
 ```bash
