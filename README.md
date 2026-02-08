@@ -135,7 +135,7 @@ TG_channel.png
 
 ## 📬 Contact
 
-**Author:** 2-1-SUJW 
+**Author:** 2-1-SUJW
 **Email:** jeremygz0607@gmail.com  
 **GitHub:** @jeremygz0607  
 
