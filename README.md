@@ -1,124 +1,157 @@
-# Aviator Payout Scraper + Signal Engine
+# 🧭 Aviator Payout Scraper + Signal Engine [Project ID: P-782]
 
-Scrapes payout/multiplier data from the Aviator casino game, saves rounds to MongoDB, triggers signals based on patterns, and sends Telegram notifications with automated daily/hourly messages.
+Scrapes payout data from the Aviator game, saves rounds to MongoDB, detects patterns, and sends Telegram signals with win/loss tracking and automated daily recaps in Portuguese (Brazil).
 
-## Components
+---
 
-- **aviator.py** – Headless browser logs in, opens the game, and scrapes payout multipliers; logs to `log.log` and writes PID to `aviator.pid`.
-- **log_monitor.py** – Tails `log.log`, detects new payouts, inserts them into MongoDB (`casino.rounds`), and triggers the signal engine for each new round.
-- **signal_engine.py** – Pattern detection (6 rounds < 2x), signal creation, gale escalation (up to 2 gales), win/loss tracking, and Telegram notifications.
-- **telegram_service.py** – All Telegram message templates (Portuguese/Brazil) with emojis: signal alerts, win/loss/gale messages, daily/hourly recaps.
-- **scheduler.py** – Scheduled messages in BRT timezone: daily opener (08:00), mid-day recap (14:00), hourly scoreboard, end of day recap (22:30), daily close (23:00), weekly recap (Sunday 21:00).
+## 📚 Table of Contents
 
-## Environment variables
+[About](#-about)  
+[Features](#-features)  
+[Tech Stack](#-tech-stack)  
+[Installation](#️-installation)  
+[Usage](#-usage)  
+[Configuration](#-configuration)  
+[Screenshots](#-screenshots)  
+[Database Schema](#-database-schema)  
+[Contact](#-contact)  
+[Acknowledgements](#-acknowledgements)
 
-Copy `.env.example` to `.env` (or set variables in your shell). **Do not commit real credentials.**
+---
 
-| Variable | Used by | Required | Description |
-|----------|---------|----------|-------------|
-| `AVIATOR_USERNAME` | aviator.py | Yes | Casino login username |
-| `AVIATOR_PASSWORD` | aviator.py | Yes | Casino login password |
-| `AVIATOR_GAME_URL` | aviator.py | No | Game URL (default in config) |
-| `AVIATOR_LOGIN_URL` | aviator.py | No | Login URL (default in config) |
-| `MONGODB_URI` | log_monitor.py | Yes (for DB) | MongoDB connection string |
-| `MONGODB_DATABASE` | log_monitor.py | No | Database name (default: `casino`) |
-| `MONGODB_COLLECTION` | log_monitor.py | No | Collection name (default: `rounds`) |
-| `TELEGRAM_BOT_TOKEN` | telegram_service.py | Yes (for Telegram) | Bot token from @BotFather |
-| `TELEGRAM_CHANNEL_ID` | telegram_service.py | Yes (for Telegram) | Channel ID (e.g., `@aviator_maquina` or numeric) |
-| `AFFILIATE_LINK` | telegram_service.py | No | Affiliate link for "JOGAR AGORA" buttons |
+## 🧩 About
 
-## Usage
+This project provides an automated pipeline for the Aviator casino game: it scrapes round multipliers with a headless browser, stores them in MongoDB, and runs a signal engine that triggers when the last few rounds are below a threshold. It solves the need for real-time pattern detection and Telegram notifications (signals, wins, gales, losses, and daily/weekly recaps) so users can follow a simple “bet on next round” strategy with optional gale (recovery) levels.
 
-Run all scripts from the project root so `log.log` and `aviator.pid` are in the right place.
+**Key goals:**
 
-1. **Scraper (required)**  
-   ```bash
-   python aviator.py
-   ```
+- Reliable scraping of payouts and one-place storage of rounds.
+- Pattern-based signal creation (e.g. last 3 rounds &lt; 2x) with gale escalation and cooldown.
+- Telegram bot messages in Portuguese (BR) for signals, results, and recaps.
 
-2. **Log monitor (required – saves payouts to MongoDB + runs signal engine)**  
-   ```bash
-   python log_monitor.py
-   ```
-   This also initializes Telegram and the scheduler for automated messages.
+---
 
-3. **Watchdog (optional – auto-restart scraper on repeated "No payouts")**  
-   ```bash
-   python run_aviator_watchdog.py
-   ```
-   Start `aviator.py` first, then run the watchdog.
+## ✨ Features
 
-## Dependencies
+- **Headless scraper** – Logs in, opens the game iframe, and scrapes payout multipliers; logs only when the list changes to keep log size small.
+- **Log monitor** – Tails the log, detects new payouts, saves them to MongoDB, and triggers the signal engine for each new round.
+- **Signal engine** – Pattern trigger (e.g. 3 rounds &lt; 2x), signal creation, gale escalation (up to 2), win/loss tracking, and `today_wins` / `today_losses` for recaps.
+- **Telegram service** – All message templates (Portuguese/Brazil): pattern monitoring, signal confirmed, win/recovery/loss, streak celebrations (5, 10, 15…), daily opener/close, mid-day and end-of-day recaps, weekly recap.
+- **Scheduler** – BRT timezone: daily opener (08:00), mid-day recap (14:00), hourly scoreboard, end-of-day recap (22:30), daily close (23:00), weekly recap (Sunday 21:00).
+- **Optional watchdog** – Auto-restart scraper on repeated “No payouts”.
+
+---
+
+## 🧠 Tech Stack
+
+| Category   | Technologies |
+|-----------|--------------|
+| **Languages** | Python 3 |
+| **Scraping**  | SeleniumBase, BeautifulSoup4 |
+| **Database**  | MongoDB (PyMongo) |
+| **Messaging** | Telegram Bot API (requests) |
+| **Scheduling** | APScheduler (pytz for BRT) |
+| **Tools**      | python-dotenv, log file tailing |
+
+---
+
+## ⚙️ Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/aviator-signal-engine.git
+
+# Navigate to the project directory
+cd aviator-signal-engine
+
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-- seleniumbase, beautifulsoup4, pymongo, requests, python-dotenv, pytz, APScheduler
+---
 
-## Configuration
+## 🚀 Usage
 
-Shared paths, log-message patterns, and signal engine parameters are in **config.py**:
+Run all scripts from the **project root** so `log.log` and `aviator.pid` are in the right place.
 
-- **Signal Engine:** `SEQUENCE_LENGTH=6`, `THRESHOLD=2.0`, `TARGET_CASHOUT=1.80`, `MAX_GALE=2`, `COOLDOWN_ROUNDS=3`
-- **MongoDB collections:** `rounds`, `signals`, `daily_stats`, `engine_state`
+**1. Scraper (required)**
 
-## Signal Engine
+```bash
+python aviator.py
+```
 
-**Trigger:** When the last 6 rounds all have multiplier < 2.0x (and no active signal, not in cooldown).
+**2. Log monitor (required)** – Saves payouts to MongoDB and runs the signal engine. Also starts the Telegram scheduler.
 
-**Flow:**
-- **Signal Active** → Next round ≥ target → **WIN** (send win message, increment daily wins).
-- **Signal Active** → Next round < target → Escalate to **Gale 1** (send gale 1 message).
-- **Gale 1 Active** → Next round ≥ target → **RECOVERED** (send recovery message, increment daily wins).
-- **Gale 1 Active** → Next round < target → Escalate to **Gale 2** (send gale 2 message).
-- **Gale 2 Active** → Next round ≥ target → **RECOVERED** (send recovery message, increment daily wins).
-- **Gale 2 Active** → Next round < target → **LOST** (send loss message, increment daily losses, start cooldown for 3 rounds).
+```bash
+python log_monitor.py
+```
 
-**Streak celebrations:** Automatically sent at 5, 10, 15, 20+ consecutive wins.
+**3. Watchdog (optional)** – Auto-restart scraper on repeated “No payouts”. Start `aviator.py` first, then:
 
-## Telegram Messages
+```bash
+python run_aviator_watchdog.py
+```
 
-All messages in **Portuguese (Brazil)** with emojis:
+For production deployment (e.g. Vultr), see **[DEPLOYMENT.md](DEPLOYMENT.md)** for systemd services and server setup.
 
-- **Daily Opener** (08:00 BRT): Yesterday's stats, instructions.
-- **Signal Confirmed**: When pattern triggers, instructions to bet with Auto Cashout.
-- **Win / Gale 1 / Gale 2 / Recovery / Loss**: Real-time signal resolution messages.
-- **Hourly Scoreboard** (10:00, 12:00, 16:00, 18:00, 20:00 BRT): Last 2 hours results.
-- **Mid-Day Recap** (14:00 BRT): Today's stats so far.
-- **End of Day Recap** (22:30 BRT): Full day results with performance message.
-- **Daily Close** (23:00 BRT): Final stats, see you tomorrow.
-- **Weekly Recap** (Sunday 21:00 BRT): Mon-Sun summary.
+---
 
-If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHANNEL_ID` are not set, messages are logged only (no errors).
+## 🧾 Configuration
 
-## Database Schema (MongoDB)
+Create a `.env` file in the project root (do not commit real credentials):
 
-### `rounds` collection
-- `_id` (int): Sequential round ID
-- `multiplier` (float): Round result (e.g., 1.50, 2.30)
-- `timestamp` (datetime): When the round occurred
-- `created_at` (datetime): When saved to DB
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AVIATOR_USERNAME` | Yes | Casino login username |
+| `AVIATOR_PASSWORD` | Yes | Casino login password |
+| `AVIATOR_GAME_URL` | No | Game URL (default in config) |
+| `AVIATOR_LOGIN_URL` | No | Login URL (default in config) |
+| `MONGODB_URI` | Yes (for DB) | MongoDB connection string |
+| `MONGODB_DATABASE` | No | Database name (default: `casino`) |
+| `MONGODB_COLLECTION` | No | Collection name (default: `rounds`) |
+| `TELEGRAM_BOT_TOKEN` | Yes (for Telegram) | Bot token from @BotFather |
+| `TELEGRAM_CHANNEL_ID` | Yes (for Telegram) | Channel ID (e.g. `@channel` or numeric) |
+| `AFFILIATE_LINK` | No | Link for “JOGAR AGORA” buttons |
 
-### `signals` collection
-- `_id` (int): Sequential signal ID
-- `trigger_round_id` (int): Round that triggered the signal
-- `target` (float): Cashout target (e.g., 1.80)
-- `status` (string): `active`, `won`, `gale1`, `gale2`, `lost`
-- `result_round_id` (int): Round where signal was resolved
-- `result_multiplier` (float): Final round result
-- `gale_depth` (int): 0, 1, or 2
-- `created_at` (datetime): Signal creation time
-- `resolved_at` (datetime): Signal resolution time
+**config.py** – Signal engine and paths:
 
-### `daily_stats` collection
-- `_id` (string): Date in YYYY-MM-DD format
-- `date` (string): Date in YYYY-MM-DD
-- `wins` (int): Total wins for the day
-- `losses` (int): Total losses for the day
-- `signals_sent` (int): Total signals created for the day
-- `updated_at` (datetime): Last update time
+- `SEQUENCE_LENGTH` = 3 (consecutive rounds &lt; threshold to trigger)
+- `THRESHOLD` = 2.0 (multiplier)
+- `TARGET_CASHOUT` = 1.80, `MAX_GALE` = 2, `COOLDOWN_ROUNDS` = 3
+- Collections: `rounds`, `signals`, `daily_stats`, `engine_state`
 
-### `engine_state` collection
-- `_id` (string): "state"
-- `cooldown_until_round_id` (int): Round ID after which cooldown ends (null when not in cooldown)
+---
+
+## 🖼 Screenshots
+
+Add demo images, GIFs, or UI preview screenshots (e.g. Telegram channel messages, dashboard).
+
+---
+
+## 📜 Database Schema
+
+**`rounds`** – `_id` (int), `multiplier` (float), `timestamp`, `created_at`  
+**`signals`** – `_id`, `trigger_round_id`, `target`, `status` (active/won/gale1/gale2/lost), `result_round_id`, `result_multiplier`, `gale_depth`, `created_at`, `resolved_at`  
+**`daily_stats`** – `_id` (date YYYY-MM-DD), `wins`, `losses`, `today_wins`, `today_losses`, `signals_sent`, `updated_at`  
+**`engine_state`** – `_id` "state", `cooldown_until_round_id`
+
+---
+
+## 📬 Contact
+
+**Author:** Your Name  
+**Email:** your.email@example.com  
+**GitHub:** @yourgithub  
+**Website/Portfolio:** yourwebsite.com
+
+---
+
+## 🌟 Acknowledgements
+
+- SeleniumBase and BeautifulSoup for scraping.
+- Telegram Bot API for notifications.
+- MongoDB for round and signal storage.
