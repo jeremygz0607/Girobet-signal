@@ -1,4 +1,4 @@
-# 🧭 Aviator Payout Scraper + Signal Engine [Project ID: P-782]
+# 🧭 Aviator Scraper + Signal Engine [Project ID: P-782]
 
 Scrapes payout data from the Aviator game, saves rounds to MongoDB, detects patterns, and sends Telegram signals with win/loss tracking and automated daily recaps in Portuguese (Brazil).
 
@@ -38,7 +38,6 @@ This project provides an automated pipeline for the Aviator casino game: it scra
 - **Signal engine** – Pattern trigger (e.g. 3 rounds &lt; 2x), signal creation, gale escalation (up to 2), win/loss tracking, and `today_wins` / `today_losses` for recaps.
 - **Telegram service** – All message templates (Portuguese/Brazil): pattern monitoring, signal confirmed, win/recovery/loss, streak celebrations (5, 10, 15…), daily opener/close, mid-day and end-of-day recaps, weekly recap.
 - **Scheduler** – BRT timezone: daily opener (08:00), mid-day recap (14:00), hourly scoreboard, end-of-day recap (22:30), daily close (23:00), weekly recap (Sunday 21:00).
-- **Optional watchdog** – Auto-restart scraper on repeated “No payouts”.
 
 ---
 
@@ -59,10 +58,10 @@ This project provides an automated pipeline for the Aviator casino game: it scra
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/aviator-signal-engine.git
+git clone https://github.com/jeremygz0607/Girobet-signal.git
 
 # Navigate to the project directory
-cd aviator-signal-engine
+cd Girobet-signal
 
 # Create virtual environment (recommended)
 python -m venv venv
@@ -88,12 +87,6 @@ python aviator.py
 
 ```bash
 python log_monitor.py
-```
-
-**3. Watchdog (optional)** – Auto-restart scraper on repeated “No payouts”. Start `aviator.py` first, then:
-
-```bash
-python run_aviator_watchdog.py
 ```
 
 For production deployment (e.g. Vultr), see **[DEPLOYMENT.md](DEPLOYMENT.md)** for systemd services and server setup.
@@ -128,8 +121,6 @@ Create a `.env` file in the project root (do not commit real credentials):
 
 ## 🖼 Screenshots
 
-Add demo images, GIFs, or UI preview screenshots (e.g. Telegram channel messages, dashboard).
-
 ---
 
 ## 📜 Database Schema
@@ -143,10 +134,10 @@ Add demo images, GIFs, or UI preview screenshots (e.g. Telegram channel messages
 
 ## 📬 Contact
 
-**Author:** Your Name  
-**Email:** your.email@example.com  
-**GitHub:** @yourgithub  
-**Website/Portfolio:** yourwebsite.com
+**Author:** Jeremy Gomez  
+**Email:** jeremygz0607@gmail.com  
+**GitHub:** @jeremygz0607  
+**Website/Portfolio:** 
 
 ---
 
