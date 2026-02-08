@@ -120,6 +120,7 @@ Create a `.env` file in the project root (do not commit real credentials):
 ---
 
 ## 🖼 Screenshots
+TG_channel.png
 
 ---
 
