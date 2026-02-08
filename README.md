@@ -135,10 +135,9 @@ TG_channel.png
 
 ## 📬 Contact
 
-**Author:** Jeremy Gomez  
+**Author:** 2-1-SUJW 
 **Email:** jeremygz0607@gmail.com  
 **GitHub:** @jeremygz0607  
-**Website/Portfolio:** 
 
 ---
 
